@@ -1,0 +1,32 @@
+{
+  "name": "repeat-schedule",
+  "version": "1.0.0",
+  "description": "Library for working with repeating schedules.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ecliptical/repeat-schedule.git"
+  },
+  "keywords": [
+    "schedule",
+    "repeat",
+    "moment",
+    "recur",
+    "event",
+    "calendar"
+  ],
+  "author": "Ecliptical Software Inc.",
+  "license": "EPL-2.0",
+  "bugs": {
+    "url": "https://github.com/ecliptical/repeat-schedule/issues"
+  },
+  "homepage": "https://github.com/ecliptical/repeat-schedule#readme",
+  "dependencies": {
+    "joi": "^13.2.0",
+    "lodash": "^4.17.10",
+    "moment": "^2.22.1"
+  }
+}

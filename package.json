@@ -27,6 +27,6 @@
   "dependencies": {
     "joi": "^13.2.0",
     "lodash": "^4.17.10",
-    "moment": "^2.22.1"
+    "moment-timezone": "^0.5.16"
   }
 }

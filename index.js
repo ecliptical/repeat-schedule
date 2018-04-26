@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const moment = require('moment');
+const moment = require('moment-timezone');
 
 function generateTimes(instant, times, test) {
     if (_.isEmpty(times)) {
@@ -100,7 +100,15 @@ function generateDays(instant, period, days, times, test) {
     return moments;
 }
 
-function* generate(schedule, start, predicate) {
+function* generate(schedule, predicate) {
+    const start = moment.parseZone(schedule.start);
+    if (schedule.tz) {
+        start.tz(schedule.tz);
+    }
+
+    const end = schedule.end && moment(schedule.end) || moment.invalid();
+    const maxCount = +schedule.count;
+
     const times = schedule.times || [ ];
     const days = schedule.days || [ ];
     const weeks = schedule.weeks || [ ];
@@ -110,6 +118,7 @@ function* generate(schedule, start, predicate) {
 
     const period = schedule.period || 'day';
     let next = start;
+    let count = 0;
 
     for (let i = 1; i <= 36525; i++) {
         let moments = [ ];
@@ -135,8 +144,15 @@ function* generate(schedule, start, predicate) {
 
         const results = _.sortBy(moments);
         for (let result of results) {
+            if (end.isValid() && result.isAfter(end)) {
+                return;
+            }
+
             if (_.isEmpty(years) || _.includes(years, result.year())) {
                 yield result;
+                if (maxCount > 0 && ++count >= maxCount) {
+                    return;
+                }
             }
         }
 

@@ -1,9 +1,9 @@
 const _ = require('lodash');
 const moment = require('moment-timezone');
 
-function generateTimes(instant, times, test) {
+function generateTimes(instant, times, start) {
     if (_.isEmpty(times)) {
-        return test(instant) && [ instant ] || [ ];
+        return instant.isSameOrAfter(start) && [ instant ] || [ ];
     }
 
     const moments = [ ];
@@ -16,7 +16,7 @@ function generateTimes(instant, times, test) {
             millisecond: 0,
         });
 
-        if (test(value)) {
+        if (value.isSameOrAfter(start)) {
             moments.push(value);
         }
     });
@@ -24,9 +24,9 @@ function generateTimes(instant, times, test) {
     return moments;
 }
 
-function generateDays(instant, period, days, times, test) {
+function generateDays(instant, period, days, times, start) {
     if (_.isEmpty(days)) {
-        return generateTimes(instant, times, test);
+        return generateTimes(instant, times, start);
     }
 
     const end = moment(instant).startOf(period).add(1, period);
@@ -51,7 +51,7 @@ function generateDays(instant, period, days, times, test) {
                         date.dayOfYear(day.value);
                 }
 
-                return generateTimes(date, times, test);
+                return generateTimes(date, times, start);
             }
 
             let count = 0;
@@ -80,7 +80,7 @@ function generateDays(instant, period, days, times, test) {
 
                 if (valid) {
                     if (++count === day.value) {
-                        return generateTimes(date, times, test);
+                        return generateTimes(date, times, start);
                     }
 
                     lastValidDate = moment(date);
@@ -90,7 +90,7 @@ function generateDays(instant, period, days, times, test) {
             }
 
             if (day.value === 0 && !_.isNull(lastValidDate)) {
-                return generateTimes(lastValidDate, times, test);
+                return generateTimes(lastValidDate, times, start);
             }
         }
 
@@ -114,7 +114,7 @@ function* generate(schedule, predicate) {
     const weeks = schedule.weeks || [ ];
     const months = schedule.months || [ ];
     const years = _.sortBy(schedule.years || [ ]);
-    const test = instant => instant.isSameOrAfter(start) && (!_.isFunction(predicate) || predicate(instant));
+    const test = _.isFunction(predicate) ? predicate : instant => true;
 
     const period = schedule.period || 'day';
     let next = start;
@@ -124,21 +124,21 @@ function* generate(schedule, predicate) {
         let moments = [ ];
 
         if (period === 'day') {
-            moments = generateTimes(next, times, test);
+            moments = generateTimes(next, times, start);
         } else if (_.isEmpty(months)) {
             if (_.isEmpty(weeks)) {
-                moments = generateDays(next, period, days, times, test);
+                moments = generateDays(next, period, days, times, start);
             } else {
                 moments = _.flatMap(weeks, week => {
                     const instant = moment(next).week(week === 0 ? next.weeksInYear() : week);
-                    return generateDays(instant, 'week', days, times, test);
+                    return generateDays(instant, 'week', days, times, start);
                 });
             }
         } else {
             moments = _.flatMap(months, month => {
                 const value = month === 0 ? 12 : month;
                 const instant = moment(next).month(_.isString(value) ? value : value - 1);
-                return generateDays(instant, 'month', days, times, test);
+                return generateDays(instant, 'month', days, times, start);
             });
         }
 
@@ -149,7 +149,10 @@ function* generate(schedule, predicate) {
             }
 
             if (_.isEmpty(years) || _.includes(years, result.year())) {
-                yield result;
+                if (test(result)) {
+                    yield result;
+                }
+
                 if (maxCount > 0 && ++count >= maxCount) {
                     return;
                 }
